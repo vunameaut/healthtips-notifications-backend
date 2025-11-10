@@ -99,7 +99,7 @@ export default async function handler(
         notification: {
           channelId: 'new_tips',
           color: '#2196F3',
-          priority: 'default' as const,
+          priority: 'high' as const,
         },
       },
       tokens: targetTokens,

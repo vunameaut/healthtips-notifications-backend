@@ -121,11 +121,11 @@ export default async function handler(
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
         },
         android: {
-          priority: 'default' as const,
+          priority: 'normal' as const,
           notification: {
             channelId: 'recommendations',
             color: '#FFC107',
-            priority: 'default' as const,
+            priority: 'high' as const,
           },
         },
       };
