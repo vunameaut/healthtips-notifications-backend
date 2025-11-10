@@ -51,18 +51,7 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Lấy thông tin mẹo sức khỏe để kiểm tra
-    const tipSnapshot = await admin.database()
-      .ref(`healthTips/${data.healthTipId}`)
-      .once('value');
-
-    if (!tipSnapshot.exists()) {
-      return res.status(404).json({ error: 'Health tip not found' });
-    }
-
-    const tipData = tipSnapshot.val();
-
-    // Thêm vào queue recommendations với timestamp
+    // Thêm vào queue recommendations trực tiếp (không cần kiểm tra tip tồn tại)
     const recommendationRef = admin.database()
       .ref('recommendationQueue')
       .child(data.healthTipId);
@@ -73,7 +62,7 @@ export default async function handler(
       category: data.category,
       queuedAt: Date.now(),
       status: 'pending',
-      priority: tipData.likes || 0, // Ưu tiên theo số likes
+      priority: 1, // Mặc định
     });
 
     return res.status(200).json({ 
