@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
+import { processPrivateKey, initializeFirebaseAdmin } from './firebase-config';
 
 export default async function handler(
   req: VercelRequest,
@@ -27,21 +28,7 @@ export default async function handler(
 
     if (!admin.apps.length) {
       try {
-        // Xử lý private key - loại bỏ tất cả escape sequences
-        let privateKey = rawPrivateKey;
-        // Loại bỏ quotes nếu có
-        privateKey = privateKey.replace(/^["']|["']$/g, '');
-        // Replace tất cả \\n, \\r\\n, \r\n thành \n thật
-        privateKey = privateKey.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\\r\\n/g, '\n');
-        
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: privateKey,
-          }),
-          databaseURL: process.env.FIREBASE_DATABASE_URL,
-        });
+        initializeFirebaseAdmin();
         firebaseInitSuccess = true;
       } catch (error) {
         firebaseInitError = error instanceof Error ? error.message : 'Unknown error';
@@ -54,10 +41,11 @@ export default async function handler(
     let dbTestSuccess = false;
     let dbTestError = null;
 
-    if (firebaseInitSuccess) {
+    if (firebaseInitSuccess && admin.apps.length > 0) {
       try {
-        await admin.database().ref('.info/connected').once('value');
-        dbTestSuccess = true;
+        const db = admin.app().database();
+        const snapshot = await db.ref('.info/connected').once('value');
+        dbTestSuccess = snapshot.exists();
       } catch (error) {
         dbTestError = error instanceof Error ? error.message : 'Unknown error';
       }
