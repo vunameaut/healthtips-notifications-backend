@@ -5,7 +5,11 @@ import { initializeFirebaseAdmin } from './firebase-config';
 
 // Khởi tạo Firebase Admin SDK với private key processing
 if (!admin.apps.length) {
-  initializeFirebaseAdmin();
+  try {
+    initializeFirebaseAdmin();
+  } catch (error) {
+    // Firebase init error will be caught in handler
+  }
 }
 
 interface QueueRecommendationData {
@@ -18,20 +22,28 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Set CORS headers
-  setCorsHeaders(res);
-  
-  // Handle OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  // Chỉ chấp nhận POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    // Set CORS headers
+    setCorsHeaders(res);
+    
+    // Handle OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
+    // Chỉ chấp nhận POST requests
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Kiểm tra Firebase đã init chưa
+    if (!admin.apps.length) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Firebase not initialized',
+        details: 'Internal server error - Firebase Admin SDK failed to initialize'
+      });
+    }
     const data: QueueRecommendationData = req.body;
 
     // Kiểm tra dữ liệu đầu vào
@@ -64,8 +76,6 @@ export default async function handler(
       priority: tipData.likes || 0, // Ưu tiên theo số likes
     });
 
-    console.log('Added to recommendation queue:', data.healthTipId);
-
     return res.status(200).json({ 
       success: true,
       message: 'Added to recommendation queue',
@@ -74,11 +84,11 @@ export default async function handler(
     });
 
   } catch (error) {
-    console.error('Error queuing recommendation:', error);
     return res.status(500).json({ 
       success: false,
       error: 'Failed to queue recommendation',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+}
 }

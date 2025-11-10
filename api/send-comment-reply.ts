@@ -1,24 +1,15 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
 import { setCorsHeaders } from './cors-config';
+import { initializeFirebaseAdmin } from './firebase-config';
 
-// Khởi tạo Firebase Admin SDK (chỉ khởi tạo 1 lần)
+// Khởi tạo Firebase Admin SDK với private key processing
 if (!admin.apps.length) {
-  // Xử lý private key - loại bỏ tất cả escape sequences
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
-  // Loại bỏ quotes nếu có
-  privateKey = privateKey.replace(/^["']|["']$/g, '');
-  // Replace tất cả \\n, \\r\\n, \r\n thành \n thật
-  privateKey = privateKey.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\\r\\n/g, '\n');
-  
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey,
-    }),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-  });
+  try {
+    initializeFirebaseAdmin();
+  } catch (error) {
+    console.error('Failed to initialize Firebase:', error);
+  }
 }
 
 interface CommentData {
@@ -34,20 +25,28 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Set CORS headers
-  setCorsHeaders(res);
-  
-  // Handle OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  // Chỉ chấp nhận POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    // Set CORS headers
+    setCorsHeaders(res);
+    
+    // Handle OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
+    // Chỉ chấp nhận POST requests
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Kiểm tra Firebase đã init chưa
+    if (!admin.apps.length) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Firebase not initialized',
+        details: 'Internal server error - Firebase Admin SDK failed to initialize'
+      });
+    }
     const data: CommentData = req.body;
 
     // Kiểm tra dữ liệu đầu vào
@@ -118,8 +117,6 @@ export default async function handler(
 
     const response = await admin.messaging().send(message);
     
-    console.log('Successfully sent comment notification:', response);
-
     return res.status(200).json({ 
       success: true, 
       messageId: response,
@@ -127,7 +124,6 @@ export default async function handler(
     });
 
   } catch (error) {
-    console.error('Error sending comment notification:', error);
     return res.status(500).json({ 
       success: false,
       error: 'Failed to send notification',
