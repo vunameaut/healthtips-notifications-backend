@@ -16,9 +16,10 @@ export default async function handler(
     };
 
     // Kiểm tra format của private key
-    const privateKeyStart = process.env.FIREBASE_PRIVATE_KEY?.substring(0, 30) || 'Not set';
-    const privateKeyHasNewlines = process.env.FIREBASE_PRIVATE_KEY?.includes('\\n') || false;
-    const privateKeyLength = process.env.FIREBASE_PRIVATE_KEY?.length || 0;
+    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+    const privateKeyStart = rawPrivateKey.substring(0, 30) || 'Not set';
+    const privateKeyHasNewlines = rawPrivateKey.includes('\n') || rawPrivateKey.includes('\\n');
+    const privateKeyLength = rawPrivateKey.length || 0;
 
     // Thử khởi tạo Firebase Admin
     let firebaseInitError = null;
@@ -26,11 +27,18 @@ export default async function handler(
 
     if (!admin.apps.length) {
       try {
+        // Xử lý private key - loại bỏ tất cả escape sequences
+        let privateKey = rawPrivateKey;
+        // Loại bỏ quotes nếu có
+        privateKey = privateKey.replace(/^["']|["']$/g, '');
+        // Replace tất cả \\n, \\r\\n, \r\n thành \n thật
+        privateKey = privateKey.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\\r\\n/g, '\n');
+        
         admin.initializeApp({
           credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            privateKey: privateKey,
           }),
           databaseURL: process.env.FIREBASE_DATABASE_URL,
         });

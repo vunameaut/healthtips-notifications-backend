@@ -1,13 +1,21 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
+import { setCorsHeaders } from './cors-config';
 
 // Khởi tạo Firebase Admin SDK (chỉ khởi tạo 1 lần)
 if (!admin.apps.length) {
+  // Xử lý private key - loại bỏ tất cả escape sequences
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+  // Loại bỏ quotes nếu có
+  privateKey = privateKey.replace(/^["']|["']$/g, '');
+  // Replace tất cả \\n, \\r\\n, \r\n thành \n thật
+  privateKey = privateKey.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\\r\\n/g, '\n');
+  
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      privateKey: privateKey,
     }),
     databaseURL: process.env.FIREBASE_DATABASE_URL,
   });
@@ -26,6 +34,14 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Set CORS headers
+  setCorsHeaders(res);
+  
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   // Chỉ chấp nhận POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
