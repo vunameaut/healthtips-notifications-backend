@@ -1,0 +1,33 @@
+name: Daily Recommendations Cron
+
+on:
+  schedule:
+    # Chạy hàng ngày lúc 11:00 UTC = 18:00 Vietnam (UTC+7)
+    - cron: '0 11 * * *'
+  
+  # Cho phép chạy thủ công từ GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  send-recommendations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send Daily Recommendations
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://healthtips-notify-git-main-vunams-projects-d3582d4f.vercel.app/api/send-daily-recommendations)
+          
+          http_code=$(echo "$response" | tail -n 1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: Request failed with status $http_code"
+            exit 1
+          fi
+          
+          echo "✅ Daily recommendations sent successfully!"
