@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthTips Notifications API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #4CAF50; }
+        .endpoint {
+            background: #f9f9f9;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        code {
+            background: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 HealthTips Notifications API</h1>
+        <p>Backend hệ thống thông báo cho ứng dụng HealthTips</p>
+        
+        <h2>📡 Available Endpoints:</h2>
+        
+        <div class="endpoint">
+            <strong>POST</strong> <code>/api/send-comment-reply</code>
+            <p>Gửi thông báo khi có bình luận mới</p>
+        </div>
+        
+        <div class="endpoint">
+            <strong>POST</strong> <code>/api/send-new-health-tip</code>
+            <p>Gửi thông báo broadcast về mẹo sức khỏe mới</p>
+        </div>
+        
+        <div class="endpoint">
+            <strong>POST</strong> <code>/api/queue-recommendation</code>
+            <p>Thêm mẹo vào hàng đợi gợi ý</p>
+        </div>
+        
+        <div class="endpoint">
+            <strong>POST</strong> <code>/api/send-daily-recommendations</code>
+            <p>Gửi gợi ý cá nhân hóa hàng ngày (Cron Job)</p>
+        </div>
+        
+        <p style="margin-top: 30px; color: #666;">
+            ✅ Status: Active<br>
+            🚀 Powered by Vercel Serverless Functions
+        </p>
+    </div>
+</body>
+</html>
