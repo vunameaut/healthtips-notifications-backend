@@ -1,16 +1,11 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
+import { setCorsHeaders } from './cors-config';
+import { initializeFirebaseAdmin } from './firebase-config';
 
-// Khởi tạo Firebase Admin SDK
+// Khởi tạo Firebase Admin SDK với private key processing
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-  });
+  initializeFirebaseAdmin();
 }
 
 interface NewHealthTipData {
@@ -24,6 +19,14 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Set CORS headers
+  setCorsHeaders(res);
+  
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   // Chỉ chấp nhận POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
